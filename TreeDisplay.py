@@ -1,9 +1,14 @@
 import networkx as nx
-import matplotlib.pyplot as plt #Currently unused. Another way to display the Graph
+import matplotlib.pyplot as plt #Currently unused. Simply another way to display the Graph (plt.show())
 import plotly.graph_objects as go
 
-# Class for displaying the tree as a proper hierarchical structure.
+
 class displayTree:
+    """Class for displaying the tree as a proper hierarchical structure.
+
+    Fields:
+        G (DiGraph): a networkx directional graph.
+    """
     G = nx.DiGraph()
     
     def __init__(self, graph):
@@ -11,8 +16,9 @@ class displayTree:
  
     
     def _hierarchy_pos(self, root=0, width=1, vert_gap = 0.2, vert_loc = 0, xcenter = 0.5, pos = None, parent = None):
-        """Reposition nodes from a networkx Graph object into a hierarchical structure by calculating a position map.
-
+        """Original code: https://www.cluzters.ai/forums/topic/459/can-one-get-hierarchical-graphs-from-networkx-with-python-3?c=1597
+        Reposition nodes from a networkx Graph object into a hierarchical structure by calculating a position map.
+        
         Args:
             G (DiGraph): Tree
             root (any): Root node key
@@ -54,13 +60,11 @@ class displayTree:
         Args:
             pos (dict): A dictionary containing the xy-coordinates of each Vertex in the graph.  
             text (list): An array of lables as strings. Array length is equal to the number of vertices. Defaults to None.
-            color (string): A hex string (e.g. '#ff0000') or more...\n
-            etc:\n               
-                        - An rgb/rgba string (e.g. 'rgb(255,0,0)')           
-                        - An hsl/hsla string (e.g. 'hsl(0,100%,50%)')     
-                        - An hsv/hsva string (e.g. 'hsv(0,100%,100%)')     
-                        - A named CSS color:
-                        Defaults to 'white'.\n
+            color (string): A hex string (e.g. '#ff0000') or\n       
+                                    - An rgb/rgba string (e.g. 'rgb(255,0,0)')           
+                                    - An hsl/hsla string (e.g. 'hsl(0,100%,50%)')     
+                                    - An hsv/hsva string (e.g. 'hsv(0,100%,100%)')     
+                                    - A named CSS color: Defaults to 'white'.\n
             size (int): Size of font. Defaults to 15.
 
         Returns:
@@ -86,8 +90,8 @@ class displayTree:
 
 
     def switchLabels(self, label, labelArray):
-        """Helper function to handle logic to switch between different labels.\n
-        Args:
+        """Helper function to handle logic to switch between different labels.
+        \nArgs:
             label (any): String or integer.
             labelArray (list): Array of labels.
 
@@ -163,8 +167,15 @@ class displayTree:
         
         fig.show(config=config)
 
-
 class Tree:
+    """Class for building the tree.
+
+    Fields:
+        G (DiGraph): a networkx directional graph.
+        preorder (list): tree vertices in preorder
+        postorder (list): tree vertices in postorder
+        display (displayTree): an object in charge of displaying the tree.
+    """
     G = nx.DiGraph()
     preorder = []
     postorder = []
@@ -181,43 +192,33 @@ class Tree:
         self.display
 
     
-    def buildTree(self, pIndex, start, end, dict, n):
-        """_summary_
+    def buildTree(self, preIndex, start, end, dict, n):
+        """Recursive algorithm for building the tree.
 
         Args:
-            preorder (list): _description_
-            pIndex (int): _description_
-            start (int): _description_
-            end (int): _description_
-            d (dict): _description_
-            count (int): _description_
+            pIndex (int): index of preorder list.
+            start (int): an index which represents the final descendant of a subtree.
+            end (int): an index which represents the root of a subtree.
+            d (dict): postorder array as a dictionary.
+            n (int): number of children a root have. 
 
         Returns:
-            root (int): key value of current node
-            pIndex (int): index of preorder list
+            root (int): key value of current node.
+            preIndex (int): index of preorder list.
         """
         
-        # Consider the next item from the given preorder sequence.
-        # This item would be the root node of the subtree formed by
-        # the `postorder[start, end]` and increment `pIndex`
-        root = self.preorder[pIndex]
+        root = self.preorder[preIndex]
         self.G.add_node(root)
-        pIndex = pIndex + 1
+        preIndex = preIndex + 1
         
-        # return if all keys are processed
-        #print(pIndex, len(preorder))
-        if pIndex == len(self.preorder):
-            return root, pIndex, n
+        if preIndex == len(self.preorder):
+            return root, preIndex, n
 
-        # find the next key index in the postorder sequence to determine the
-        # boundary of the left and right subtree of the current root node
-        index = dict.get(self.preorder[pIndex])
-        #print("root", root,"| start:", start,"end:", end ,"next node:", self.preorder[pIndex],"index:", index, "n:", n)
+        index = dict.get(self.preorder[preIndex])
 
         for i in range(n):
             n -= 1
                 
-            # Need this while loop to only iterate over subtrees with more than one neighbour
             if(start <= index and index <= end):
                 startSubtree = start
                 endSubtree = index
@@ -226,69 +227,60 @@ class Tree:
                     startSubtree = index + 1
                     endSubtree = end - 1
                 
-                # build the left subtree
-                node, pIndex, n = self.buildTree(pIndex, startSubtree, endSubtree, dict, n)
-                #print(node, pIndex, n)
+                node, preIndex, n = self.buildTree(preIndex, startSubtree, endSubtree, dict, n)
                 self.G.add_edge(root, node)
                 
                 if(start == index):
                     break
-        
-        #print(root, "is returned with pIndex:", pIndex, "n:", n)
-        return root, pIndex, n + 1
+        return root, preIndex, n + 1
 
-    # Construct a full generic tree from preorder and postorder sequence
-    def buildGenericTree(self):
-        """_summary_
-
+    def buildCombinationTree(self):
+        """Initiates the construction of the tree.
         Args:
             preorder (list): Array of elements from a tree obtained from preorder traversal.
             postorder (list): Array of elements from a tree obtains from postorder traverasl.
 
         Returns:
-            function: a fully built tree
+            preIndex (int): Final index of the list after recursing through the tree.
         """
         
-        # base case
+        # base case.
         if not self.preorder or len(self.preorder) != len(self.postorder):
             return
 
         # postorder array is parsed into a dictionary to efficiently find the index of 
-        # any element in the given postorder sequence
+        # any element in the given postorder sequence.
         dict = {}
         for i, e in enumerate(self.postorder):
             dict[e] = i
 
-        # `pIndex` stores the index of the next node in the preorder sequence
-        pIndex = 0
+        # `preIndex` stores the index of the next node in the preorder sequence.
+        preIndex = 0
 
-        # set range [start, end] for subtree formed by postorder sequence
+        # set range [start, end] for subtree formed by postorder sequence.
         start = 0
         end = len(self.preorder) - 1
 
-        # a rigid depth calculation function. Relies on 
-        # the fact that combination trees are perfect.
-        n=self.calculateDepth(pIndex, start, end, dict, 0)[0]
+        # Max depth of the tree.
+        n=self.calculateDepth(preIndex, start, end, dict, 0)[0]
     
-        return self.buildTree(pIndex, start, end, dict, n-1)[0]
+        return self.buildTree(preIndex, start, end, dict, n-1)[0]
     
-    # A rigid depth calculation function to initiate building of true. 
-    # Relies on the fact that combination trees are perfect.
-    def calculateDepth(self, pIndex, start, end, dict, n):
-        pIndex = pIndex + 1
+    # A rigid depth calculation function. Relying on the fact that combination trees are perfect,
+    # it only goes down the left most branch of the tree to find the max depth.
+    def calculateDepth(self, preIndex, start, end, dict, n):
+        preIndex = preIndex + 1
         
-        if pIndex == len(self.preorder):
-            return pIndex, n
+        if preIndex == len(self.preorder):
+            return preIndex, n
 
-        index = dict.get(self.preorder[pIndex])
-        #print("start:", start,"end:", end ,"next node:", self.preorder[pIndex],"index:", index, "n:", n)
+        index = dict.get(self.preorder[preIndex])
         
         if(start <= index and index <= end):                
-                # build the left subtree
-                pIndex, n = self.calculateDepth(pIndex, start, index, dict, n)
+                preIndex, n = self.calculateDepth(preIndex, start, index, dict, n)
                 
     
-        return (pIndex, n+1)
+        return (preIndex, n+1)
         
 
 #####################################################################################################
@@ -296,9 +288,6 @@ class Tree:
 #####################################################################################################
 G = nx.DiGraph()
 
-# 0 is our root. If we move along our preorder list, 1 is a subtree. Any number below 1 are 
-# children of 1, they are [4,10,5,11]. 4 is a subtree. Any number below 4 are children of 4, 
-# in this case it is only [10]. 10 is not a subtree so we pop it off the stack.
 postorder0 = [0]
 preorder0 =  [0]
 
@@ -324,89 +313,5 @@ preorder4 =  [0,1,5,17,41,18,42,6,19,43,20,44,7,21,45,22,46,
 v_labels = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p']
 
 tree = Tree(G, preorder4, postorder4)
-tree.buildGenericTree()
+tree.buildCombinationTree()
 tree.display()
-
-
-######################################################################################################
-##-------------------------------------------CODE ARCHIVE-------------------------------------------##
-######################################################################################################
-
-"""# Tree but letters
-G.add_nodes_from(['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p'])
-G.add_edges_from([("a","b"), ("a","c"), ("a","d"), 
-                  ("b","e"), ("b","f"), 
-                  ("c","g"), ("c","h"), 
-                  ("d","i"), ("d","j"), 
-                  ("e","k"), 
-                  ("f","l"), 
-                  ("g","m"), 
-                  ("h","n"),
-                  ("i","o"),
-                  ("j","p")])
-"""
-
-"""# Since our tree represents all possible combinations of n number of Promotions,
-# if we use "P1", "P2", "P3", etc. as the key then eventually our key will be repeated. 
-# Instead we'll use numbers as the key and use annotations to label the nodes as P1, P2, P3.
-# Currently this relies on data in a list as input.
-G.add_nodes_from([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15])
-adjacency_list = [[1,2,3], [4,5], [6,7], [8,9], [10], [11], [12], [13], [14], [15]]
-
-def _buildTree(adj_list):
-    for k in range(len(adj_list)):
-        for i in adj_list[k]:
-            G.add_edge(k,i)
-            
-_buildTree(adjacency_list)"""
-
-"""# Tree visualization using igraph instead of networkx
-import igraph as ig
-from igraph import Graph, EdgeSeq
-
-n_vertices = 10
-G = Graph.Tree(n_vertices,2)
-lay = G.layout('rt')
-
-print(lay[2])
-
-position = {k: lay[k] for k in range(n_vertices)}
-Y = [lay[k][1] for k in range(n_vertices)]
-M = max(Y)
-
-es = EdgeSeq(G)
-E = [e.tuple for e in G.es]
-
-L = len(position)
-Xn = [position[k][0] for k in range(L)]
-Yn = [2*M-position[k][1] for k in range(L)]
-
-Xe = []
-Ye = []
-for edge in E:
-    Xe+=[position[edge[0]][0],position[edge[1]][0], None]
-    Ye+=[2*M-position[edge[0]][1],2*M-position[edge[1]][1], None]
-
-print(position)
-print(Xe)
-
-fig = go.Figure()
-fig.add_trace(go.Scatter(x=Xe, 
-                         y=Ye,
-                         mode='lines',
-                         line=dict(color='rgb(0,0,0)', width=2),
-                         hoverinfo='none'))
-
-fig.add_trace(go.Scatter(x=Xn,
-                  y=Yn,
-                  mode='markers',
-                  name='bla',
-                  marker=dict(symbol='circle-dot',
-                                size=18,
-                                color='#6175c1',    #'#DB4551',
-                                line=dict(color='rgb(50,50,50)', width=1)
-                                ),
-                  hoverinfo='text',
-                  opacity=0.8
-                  ))
-"""
