@@ -2,13 +2,13 @@ import networkx as nx
 import matplotlib.pyplot as plt #Currently unused. Simply another way to display the Graph (plt.show())
 import plotly.graph_objects as go
 
-
 class displayTree:
     """Class for displaying the tree as a proper hierarchical structure.
 
     Fields:
         G (DiGraph): a networkx directional graph.
     """
+    
     G = nx.DiGraph()
     
     def __init__(self, graph):
@@ -71,10 +71,6 @@ class displayTree:
             annotations (list): Array of string, which represents annotations.
         """
         
-        Length = len(pos)
-        # if len(text) != Length:
-        #     raise ValueError('The lists pos and text must have the same len')
-        
         annotations = []
         for k in G.nodes:
             annotations.append(dict(
@@ -97,7 +93,7 @@ class displayTree:
 
         Returns:
             Any: return either an element in G.nodes or an element in the array of labels.
-        """
+        """       
         
         if labelArray == self.G.nodes or labelArray == None:
             return label
@@ -108,6 +104,7 @@ class displayTree:
     def display(self):    
         """A method to display trees in a proper hierarchical structure. Graphs are made using networkx and plotly is used to display.
         """
+        
         pos = self._hierarchy_pos(0)
         nx.draw_networkx(self.G, pos, with_labels=True, node_size = 1500, arrows=False, width=3)
         config = {'scrollZoom': True, 
@@ -176,6 +173,7 @@ class Tree:
         postorder (list): tree vertices in postorder
         display (displayTree): an object in charge of displaying the tree.
     """
+    
     G = nx.DiGraph()
     preorder = []
     postorder = []
@@ -186,6 +184,7 @@ class Tree:
         self.preorder = preorder
         self.postorder = postorder
         self.display = displayTree(self.G).display
+                
         
     # Check if the tree is built. Displays if it is.
     def display(self):
@@ -234,6 +233,7 @@ class Tree:
                     break
         return root, preIndex, n + 1
 
+
     def buildCombinationTree(self):
         """Initiates the construction of the tree.
         Args:
@@ -265,7 +265,6 @@ class Tree:
         n=self.calculateDepth(preIndex, start, end, dict, 0)[0]
     
         return self.buildTree(preIndex, start, end, dict, n-1)[0]
-    
     # A rigid depth calculation function. Relying on the fact that combination trees are perfect,
     # it only goes down the left most branch of the tree to find the max depth.
     def calculateDepth(self, preIndex, start, end, dict, n):
@@ -282,7 +281,6 @@ class Tree:
     
         return (preIndex, n+1)
         
-
 #####################################################################################################
 ##-------------------------------------------CLIENT CODE-------------------------------------------##
 #####################################################################################################
@@ -309,9 +307,18 @@ preorder4 =  [0,1,5,17,41,18,42,6,19,43,20,44,7,21,45,22,46,
             3,11,29,53,30,54,12,31,55,32,56,13,33,57,34,58,
             4,14,35,59,36,60,15,37,61,38,62,16,39,63,40,64]
 
+# FIXME: Program is not compatible with general trees. 
+postStr = "{5->10.0}_{4}_{3}_{4->3.0}_{3}_{5}_{2}_{1}_{4->11.0}_{3}_{5}_{2}_{18}_{null}"
+preStr = "{null}_{1}_{2}_{3}_{4}_{5->10.0}_{5}_{3}_{4->3.0}_{18}_{2}_{5}_{3}_{4->11.0}"
+postorder5 = postStr.split('_')
+preorder5 = preStr.split('_')
+
+print(postorder5)
+print(preorder5)
+
 # TODO: Make a function which extracts values from an object for use as labels.
 v_labels = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p']
 
-tree = Tree(G, preorder4, postorder4)
+tree = Tree(G, preorder5, postorder5)
 tree.buildCombinationTree()
 tree.display()
