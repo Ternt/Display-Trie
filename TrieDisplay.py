@@ -3,9 +3,6 @@ import networkx as nx
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 
-v = "acdefg"
-print(*v)
-
 def packPath(path):
     output = []
     x = 0
