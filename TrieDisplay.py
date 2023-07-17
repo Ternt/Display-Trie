@@ -3,15 +3,33 @@ import networkx as nx
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 
-class displayGraph:
+v = "acdefg"
+print(*v)
+
+def packPath(path):
+    output = []
+    x = 0
+    while x < len(path):
+        if(path[x] == "_"):
+            output.append(path[x+3:len(path)])
+            break
+        
+        output.append(path[x])
+        x += 1
+    return output
+
+class buildTrie:
     trie = nx.DiGraph()
+    
     
     def __init__(self, filename):
         paths = self.readPathsFromFile(filename)
         self.trie = self.prefix_tree(paths)
     
+    
     def getTrie(self):
         return self.trie
+    
     
     def readPathsFromFile(self,filename = ""):
         """The method reads from a file, the content of which is all the paths of a trie. Appends all those paths into a list and returns the list.
@@ -20,30 +38,31 @@ class displayGraph:
             pathList (list): List of all possible paths
         """
         f = open(self.textExtensionCheck(filename), "r")
-        pathList = []
-        
+        pathList = []  
         for i in f:
-            path = ""
-            x = 1
-            while(i[x] != "]"):
-                if(i[x]==','):
-                    x+=1
-                path += i[x]
-                x += 1
-
-            #path+=i[x+1:len(i)]
+            tempPath = ""
+            index = 1
+            if(len(i.strip()) == 0):
+                continue
             
-            path = path.replace(" ", "")
-            pathList.append(path)
-            
+            while(i[index] != "]"):
+                if(i[index] == ','):
+                    index += 1
+                tempPath += i[index]
+                index += 1
+                
+            tempPath = tempPath + i[index+1:len(i)-1]
+            tempPath = tempPath.replace(" ", "")
+            pathList.append(tempPath)
         return pathList
+
 
     def textExtensionCheck(self, filename):
         if (filename.__contains__(".txt")):
             return filename
         else:
             return filename+".txt"
-
+        
     # Taken from networkx prefix_tree source code.
     def prefix_tree(self, paths):
         """Creates a directed prefix tree from a list of paths.
@@ -135,20 +154,23 @@ class displayGraph:
             >>> sorted(recovered)
             ['ab', 'abs', 'ad']
         """
-
         def get_children(parent, paths):
             children = defaultdict(list)
             # Populate dictionary with key(s) as the child/children of the root and
             # value(s) as the remaining paths of the corresponding child/children
-            for path in paths:
+            count = 0
+            while(count < len(paths)):
+                path = paths[count]
                 # If path is empty, we add an edge to the NIL node.
                 if not path:
                     tree.add_edge(parent, NIL)
+                    count += 1
                     continue
-                child, *rest = path
+                child = path[0]
+                rest = packPath(path[1:])
                 # `child` may exist as the head of more than one path in `paths`.
-                #print(child)
                 children[child].append(rest) 
+                count += 1
             return children
 
         # Initialize the prefix tree with a root node and a nil node.
@@ -160,6 +182,7 @@ class displayGraph:
         children = get_children(root, paths)   
         stack = [(root, iter(children.items()))]
         while stack:
+            count = 0
             parent, remaining_children = stack[-1]
             try:
                 child, remaining_paths = next(remaining_children)
@@ -170,18 +193,20 @@ class displayGraph:
             # We relabel each child with an unused name.
             new_name = len(tree) - 1
             # The "source" node attribute stores the original node name.
-            # print(str(list(children.keys())))
             
             tree.add_node(new_name, source=child)
             tree.add_edge(parent, new_name)
             children = get_children(new_name, remaining_paths)
             stack.append((new_name, iter(children.items())))
-
+            count += 1
         return tree
+
+
 
 class displayTrie():    
     def __init__(self, trie):
         self.traceFigure(trie)
+        
         
     def hierarchy_pos(self, G, root, width = 1, vert_gap = 0.2, vert_loc = 0, xcenter = 0.5 ):
         '''If there is a cycle that is reachable from root, then result will not be a hierarchy.
@@ -193,7 +218,6 @@ class displayTrie():
         vert_loc: vertical location of root
         xcenter: horizontal location of root
         '''
-
         def h_recur(G, root, width, vert_gap, vert_loc, xcenter, pos = None, parent = None, parsed = []):      
             if(root not in parsed):
                 parsed.append(root)
@@ -202,9 +226,6 @@ class displayTrie():
                 else:
                     pos[root] = (xcenter, vert_loc)
                 neighbors = list(G.neighbors(root))
-                # if parent != None:
-                #     print(neighbors)
-                #     neighbors.remove(parent)
                 if len(neighbors)!=0:
                     dx = width/len(list(neighbors))
                     nextx = xcenter - width/2 - dx/2
@@ -214,10 +235,10 @@ class displayTrie():
                                             vert_loc = vert_loc-vert_gap, xcenter=nextx, pos=pos,
                                             parent = root, parsed = parsed)
             return pos
-
         return h_recur(G, root, width, vert_gap, vert_loc, xcenter)
 
-    def makeAnnotations(self, G, pos, text=None, color='white', size=15):
+
+    def makeAnnotations(self, G, pos, text=None, color='black', size=15):
             """Goes through each vertex and label them accordingly. text (array) parameter needs to be in preorder.
             
             Args:
@@ -233,7 +254,6 @@ class displayTrie():
             Returns:
                 annotations (list): Array of string, which represents annotations.
             """
-            
             annotations = []
             for k in G.nodes:
                 annotations.append(dict(
@@ -243,8 +263,8 @@ class displayTrie():
                 font=dict(color=color, size=size),
                 showarrow=False
             ))
-        
             return annotations
+
 
     def switchLabelling(self, G, label, labelArray):
         """Helper function to handle logic to switch between different labels.
@@ -254,24 +274,23 @@ class displayTrie():
 
         Returns:
             Any: return either an element in G.nodes or an element in the array of labels.
-        """       
-        
+        """          
         if labelArray == G.nodes or labelArray == None:
             return label
         else:
             return labelArray[label]
 
+
     def extractLabels(self ,G = nx.DiGraph()):
         list = []
-        
         for i in range(G.order()):
             list.append(G.nodes[i]['source'])
             
         return list
 
+
     def adjustNodeSize(nodeCount):
         size = 30
-        
         if(nodeCount <= 16):
             return size
         
@@ -280,9 +299,8 @@ class displayTrie():
             return size
         
         size = nodeCount * 0.0257
-        #print(size)
-        
         return size
+
 
     def traceFigure(self, G):
         G.remove_node(-1)
@@ -327,7 +345,7 @@ class displayTrie():
             mode='markers',
             hoverinfo='text',
             marker=dict(color='rgb(0,0,0)',
-                size=30),
+                size=35),
                 line_width=2)
 
         #############################
@@ -344,11 +362,13 @@ class displayTrie():
         config = {'scrollZoom': True, 
                         'displaylogo': False,
                         'modeBarButtonsToRemove':['lasso2d']}
+        
         fig.show(renderer="browser", config=config)
+
 
 #####################################################################################################
 ##-------------------------------------------CLIENT CODE-------------------------------------------##
 #####################################################################################################
 
-trie = displayGraph("somePaths").getTrie()
+trie = buildTrie("somePaths").getTrie()
 displayTrie(trie)
