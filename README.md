@@ -1,21 +1,10 @@
-# Display-Tree
-A program I am working on while interning as a backend developer at a vietnamese company called Mobile World JSC. A while back I was tasked with writing a program to visualize data structures in a way that was easy to understand. The data structure I had to visualize was a perfect generic (k-ary) tree based on this problem[^1]. Before, I didn't even know what the heck a generic tree was and now I have to build **AND** display it :|| 
+# Display-Trie
+A program I am working on while interning as a backend developer at a vietnamese company called Mobile World JSC. A while back I was tasked with writing a program to visualize data structures in a way that was easy to understand. Before, I was tasked with visualizing a perfect generic (k-ary) tree based on this problem[^1]. But due to the change in data structure, I am now working with tries (prefix trees). 
 
-Anyways, how it works is the program takes in two lists of vertices. One that is in preorder and the other in postorder. The program then recursively go through these two lists to build the tree, using the networkx python library, and finally display it, using the plotly python library.
+Originally I wanted to make a really general program that can take in any pair of preorder and postorder list and build a tree out of it, no matter the type. That proved quite challenging and I currently I can't think of a solution to this. Also due to work, I had to change the program and implement something more specific, that being **tries** or **prefix trees**. 
 
-Example input:  
-```
-postorder3 = [10,4,11,5,1,12,6,13,7,2,14,8,15,9,3,0]
-preorder3 =  [0,1,4,10,5,11,2,6,12,7,13,3,8,14,9,15]
-```
-Example output:
-![Screenshot_3](https://github.com/Ternt/Display-Tree/assets/45267060/4893ea1f-88fa-43b2-a5b8-cd7bc9623a21)
+Now, rather than taking in two arrays, the program reads from a text file which contains a set paths. Converts it into a list of strings, with each character representing a node. And then builds the graph using the networkx function prefix_tree, which generates a prefix tree from strings or lists of integers.
 
-## TO DOs
-1. As the program is built to depend on input to correctly build and display data, we need to make sure that that data being inputted is valid. Therefore, verification, validation, as well as error handling features will need to be implemented for the program to run smoothly.
-   
-2. Implement automated input of data. I have no idea what how to do this... But automation means less work **yay**!
-3. Algorithm to relabel all the nodes. Should be simple assuming that the input contains label data.
-
+output:![Screenshot_4](https://github.com/Ternt/Display-Tree/assets/45267060/f5485b56-205f-4a09-a001-50650973aa15)
 
 [^1]: https://medium.com/trendyol-tech/how-do-we-calculate-promotions-in-the-cart-85e7b50af2b6
