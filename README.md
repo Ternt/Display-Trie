@@ -3,10 +3,8 @@ A program I am working on while interning as a backend developer at a vietnamese
 
 Originally I wanted to make a really general program that can take in any pair of preorder and postorder list and build a tree out of it, no matter the type. That proved quite challenging and I currently I can't think of a solution to this. Also due to work, I had to change the program and implement something more specific, that being **tries** or **prefix trees**. 
 
-Now, rather than taking in two arrays, the program reads from a text file which contains a set of nodes paths. Converts it into a list of strings, with each character representing a node. And then builds the graph using the networkx function prefix_tree, which generates a prefix tree from strings or lists of integers.
+Now, rather than taking in two arrays, the program reads from a text file which contains a set paths. Converts it into a list of strings, with each character representing a node. And then builds the graph using the networkx function prefix_tree, which generates a prefix tree from strings or lists of integers.
 
-output:
-![image](https://github.com/Ternt/Display-Tree/assets/45267060/725f19b3-053c-449d-8e35-4d3e0c5b4071)
-
+output:![Screenshot_4](https://github.com/Ternt/Display-Tree/assets/45267060/f5485b56-205f-4a09-a001-50650973aa15)
 
 [^1]: https://medium.com/trendyol-tech/how-do-we-calculate-promotions-in-the-cart-85e7b50af2b6
