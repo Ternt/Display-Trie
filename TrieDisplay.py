@@ -3,16 +3,36 @@ import networkx as nx
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 
+
 def packPath(path):
+    #print("Path:", path, "Type:", type(path))
     output = []
     x = 0
+    end = 0
+    
     while x < len(path):
+        if(path[x] == " "):
+            x += 1
+            continue
+
         if(path[x] == "_"):
-            output.append(path[x+3:len(path)])
+            output.append(path[x+1:len(path)])
             break
         
-        output.append(path[x])
+        #print(path[x:])
+        for i in range(x,len(path)-1):
+            if(path[i+1] == " "):
+                end = i
+                break
+        #print(x, end)
+        
+        if(end-x == 0 or end == 0):
+            output.append(path[x])
+        else:
+            output.append(path[x] + path[end])
         x += 1
+        
+    print(output)
     return output
 
 class buildTrie:
@@ -48,8 +68,7 @@ class buildTrie:
                 tempPath += i[index]
                 index += 1
                 
-            tempPath = tempPath + i[index+1:len(i)-1]
-            tempPath = tempPath.replace(" ", "")
+            tempPath = tempPath + " " + i[index+3:len(i)-1]
             pathList.append(tempPath)
         return pathList
 
@@ -60,7 +79,8 @@ class buildTrie:
         else:
             return filename+".txt"
         
-    # Taken from networkx prefix_tree source code.
+    # Taken from networkx prefix_tree source code. 
+    # https://networkx.org/documentation/stable/_modules/networkx/generators/trees.html#prefix_tree
     def prefix_tree(self, paths):
         """Creates a directed prefix tree from a list of paths.
 
@@ -166,7 +186,7 @@ class buildTrie:
                 child = path[0]
                 rest = packPath(path[1:])
                 # `child` may exist as the head of more than one path in `paths`.
-                children[child].append(rest) 
+                children[child].append(rest)
                 count += 1
             return children
 
