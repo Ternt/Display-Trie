@@ -16,7 +16,8 @@ def packPath(path):
             continue
 
         if(path[x] == "_"):
-            output.append(path[x+1:len(path)])
+            print(output[len(output)-1])
+            output[len(output)-1] += path[x+1:len(path)]
             break
         
         #print(path[x:])
@@ -32,7 +33,7 @@ def packPath(path):
             output.append(path[x] + path[end])
         x += 1
         
-    print(output)
+    #print(output)
     return output
 
 class buildTrie:
@@ -322,6 +323,7 @@ class displayTrie():
     def traceFigure(self, G):
         G.remove_node(-1)
         trieLabels = self.extractLabels(G)
+        print(trieLabels)
 
         pos = self.hierarchy_pos(G, 0, width=10, vert_gap=0.1)
         nx.draw_networkx(G, pos, with_labels=True, node_size = 500, arrows=False, width=3)
@@ -359,11 +361,13 @@ class displayTrie():
             
         node_trace = go.Scatter(
             x=node_x, y=node_y,
-            mode='markers',
+            mode='markers+text',
             hoverinfo='text',
-            marker=dict(color='rgb(0,0,0)',
-                size=35),
-                line_width=2)
+            text=trieLabels,
+            texttemplate='%{text}',
+            marker=dict(color="rgba(195, 74, 54, 0.8)",
+                size=25),
+                line=dict(color="#4B4453", width=10))
 
         #############################
         #--------DRAW FIGURE--------#
