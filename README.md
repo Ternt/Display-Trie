@@ -9,9 +9,11 @@ Now, rather than taking in two arrays,
 3. builds the graph node by node, edge by edge.
 
 input: list of paths
+
 ![image](https://github.com/Ternt/Display-Tree/assets/45267060/eaebb8a5-88b5-4a62-a860-79ad78972cf7)
 
 output:
+
 ![Screenshot_4](https://github.com/Ternt/Display-Tree/assets/45267060/f5485b56-205f-4a09-a001-50650973aa15)
 
 [^1]: https://medium.com/trendyol-tech/how-do-we-calculate-promotions-in-the-cart-85e7b50af2b6
