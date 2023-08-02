@@ -9,6 +9,8 @@ def packPath(path):
     output = []
     x = 0
     end = 0
+    if(type(path) is str):
+        path = path.strip()
     
     while x < len(path):
         if(path[x] == " "):
@@ -16,13 +18,12 @@ def packPath(path):
             continue
 
         if(path[x] == "_"):
-            print(output[len(output)-1])
-            output[len(output)-1] += path[x+1:len(path)]
+            output[len(output)-1] += path[x:len(path)]
             break
         
         #print(path[x:])
         for i in range(x,len(path)-1):
-            if(path[i+1] == " "):
+            if(path[i+1] == " " or path[i+1] == "_"):
                 end = i
                 break
         #print(x, end)
@@ -32,9 +33,9 @@ def packPath(path):
         else:
             output.append(path[x] + path[end])
         x += 1
-        
-    #print(output)
+       
     return output
+
 
 class buildTrie:
     trie = nx.DiGraph()
@@ -68,8 +69,8 @@ class buildTrie:
                     index += 1
                 tempPath += i[index]
                 index += 1
-                
-            tempPath = tempPath + " " + i[index+3:len(i)-1]
+            
+            tempPath = tempPath + i[index+3:len(i)-1]
             pathList.append(tempPath)
         return pathList
 
@@ -194,16 +195,16 @@ class buildTrie:
         # Initialize the prefix tree with a root node and a nil node.
         tree = nx.DiGraph()
         root = 0
-        tree.add_node(root, source="Null")
+        tree.add_node(root, source="Null", value='')
         NIL = -1
         tree.add_node(NIL, source="NIL")
         children = get_children(root, paths)   
         stack = [(root, iter(children.items()))]
         while stack:
-            count = 0
             parent, remaining_children = stack[-1]
             try:
                 child, remaining_paths = next(remaining_children)
+                #print(child, remaining_paths)
             # Pop item off stack if there are no remaining children
             except StopIteration:
                 stack.pop()
@@ -212,20 +213,18 @@ class buildTrie:
             new_name = len(tree) - 1
             # The "source" node attribute stores the original node name.
             
-            tree.add_node(new_name, source=child)
+            tree.add_node(new_name, source=child[0], value=child[2:])
             tree.add_edge(parent, new_name)
             children = get_children(new_name, remaining_paths)
             stack.append((new_name, iter(children.items())))
-            count += 1
         return tree
-
 
 
 class displayTrie():    
     def __init__(self, trie):
-        self.traceFigure(trie)
-        
-        
+        self.traceFigure(trie)        
+   
+   
     def hierarchy_pos(self, G, root, width = 1, vert_gap = 0.2, vert_loc = 0, xcenter = 0.5 ):
         '''If there is a cycle that is reachable from root, then result will not be a hierarchy.
 
@@ -299,12 +298,14 @@ class displayTrie():
             return labelArray[label]
 
 
-    def extractLabels(self ,G = nx.DiGraph()):
-        list = []
-        for i in range(G.order()):
-            list.append(G.nodes[i]['source'])
-            
-        return list
+    def extractVertexData(self ,G = nx.DiGraph()):
+        sources = []
+        values = []
+        for i in G.nodes:
+            sources.append(G.nodes[i]['source'])
+            values.append(G.nodes[i]['value'])
+
+        return sources, values
 
 
     def adjustNodeSize(nodeCount):
@@ -322,9 +323,8 @@ class displayTrie():
 
     def traceFigure(self, G):
         G.remove_node(-1)
-        trieLabels = self.extractLabels(G)
-        print(trieLabels)
-
+        trieLabels = self.extractVertexData(G)
+        
         pos = self.hierarchy_pos(G, 0, width=10, vert_gap=0.1)
         nx.draw_networkx(G, pos, with_labels=True, node_size = 500, arrows=False, width=3)
                 
@@ -361,28 +361,29 @@ class displayTrie():
             
         node_trace = go.Scatter(
             x=node_x, y=node_y,
-            mode='markers+text',
+            mode='markers',
             hoverinfo='text',
-            text=trieLabels,
+            text=trieLabels[1],
             texttemplate='%{text}',
+            textposition="bottom center",
             marker=dict(color="rgba(195, 74, 54, 0.8)",
-                size=25),
-                line=dict(color="#4B4453", width=10))
+                size=25,
+                line=dict(color="#4B4453", width=1)))
 
         #############################
         #--------DRAW FIGURE--------#
         #############################
         fig = go.Figure(
                     data=[edge_trace, node_trace],
-                    layout=go.Layout(annotations=self.makeAnnotations(G, pos, trieLabels, 'white', 15),
+                    layout=go.Layout(annotations=self.makeAnnotations(G, pos, trieLabels[0], 'white', 15),
                                     showlegend = False,
                                     xaxis=dict(showgrid=True, zeroline=True, showticklabels=False),
                                     yaxis=dict(showgrid=True, zeroline=True, showticklabels=False,))
                 )
 
         config = {'scrollZoom': True, 
-                        'displaylogo': False,
-                        'modeBarButtonsToRemove':['lasso2d']}
+                  'displaylogo': False,
+                  'modeBarButtonsToRemove':['lasso2d']}
         
         fig.show(renderer="browser", config=config)
 
@@ -391,5 +392,5 @@ class displayTrie():
 ##-------------------------------------------CLIENT CODE-------------------------------------------##
 #####################################################################################################
 
-trie = buildTrie("somePaths").getTrie()
+trie = buildTrie("testPath").getTrie()
 displayTrie(trie)
