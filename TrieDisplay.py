@@ -1,35 +1,14 @@
+
+"""A python program for visualizing prefix trees.
+It reads paths from a text file, build the tree,
+and then display that prefix tree. The program uses
+networkx for building the prefix tree and plotly 
+for visualizing."""
+
 from collections import defaultdict
 import networkx as nx
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
-
-#############################
-#--------DRAW FIGURE--------#
-#############################
-
-
-def packPath(path):
-    output = []
-    x = 0
-    end = 0
-    
-    while x != len(path):
-        
-        if(path[x] == " "):
-            x += 1
-            continue
-        
-        for i in range(x,len(path)):
-            if(i+1 == len(path) or path[i+1] == " "):
-                end = i+1
-                break
-            
-        output.append(path[x:end])
-
-        x += (end-x)
-          
-    return output
-
 
 class buildTrie:
     trie = nx.DiGraph()
@@ -45,7 +24,8 @@ class buildTrie:
     
     
     def readPathsFromFile(self,filename = ""):
-        """The method reads from a file, the content of which is all the paths of a trie. Appends all those paths into a list and returns the list.
+        """The method reads from a file, the content of which is all the paths of a trie. 
+        Appends all those paths into a list and returns the list.
         
         Returns:
             pathList (list): List of all possible paths
@@ -74,8 +54,7 @@ class buildTrie:
                 index += 1
             
             values.append(i[i.index("]")+4:-1])
-            #print(keys)
-            #print(values)
+            
             for i in range(len(keys)):              
                 path += keys[i] + "_" + values[i+1] + " "
             path = path.split()
@@ -90,8 +69,8 @@ class buildTrie:
         else:
             return filename+".txt"
         
-    # Taken from networkx prefix_tree source code. 
-    # https://networkx.org/documentation/stable/_modules/networkx/generators/trees.html#prefix_tree
+    # Taken from networkx prefix_tree source code. Modified to be more specific to my program.
+    # source: https://networkx.org/documentation/stable/_modules/networkx/generators/trees.html#prefix_tree
     def prefix_tree(self, paths):
         """Creates a directed prefix tree from a list of paths.
 
@@ -188,17 +167,12 @@ class buildTrie:
             # value(s) as the remaining paths of the corresponding child/children
             count = 0
             while(count < len(paths)):
-                if(type(paths[count]) is str):
-                    path = packPath(paths[count].strip())
-                else:
-                    path = paths[count]
-                #print(path)
+                path = paths[count]
                 # If path is empty, we add an edge to the NIL node.
                 if not path:
                     tree.add_edge(parent, NIL)
                     count += 1
                     continue
-                #TODO: Nodes that have the same key but different values do not overwrite each other.
                 child = (path[0][0], path[0][path[0].index("_")+1:])
                 rest = path[1:]
                 # `child` may exist as the head of more than one path in `paths`.
@@ -219,15 +193,15 @@ class buildTrie:
             parent, remaining_children = stack[-1]
             try:
                 child, remaining_paths = next(remaining_children)
-                #print(child, remaining_paths)
+
             # Pop item off stack if there are no remaining children
             except StopIteration:
                 stack.pop()
                 continue
             # We relabel each child with an unused name.
             new_name = len(tree) - 1
-            # The "source" node attribute stores the original node name.
-            #print(child, remaining_paths)
+            # The "source" node attribute stores the name of the parent node.
+            # The "value" node attribute specifies the value at that node.
             tree.add_node(new_name, source=child[0], value=child[1])
             tree.add_edge(parent, new_name)
             children = get_children(new_name, remaining_paths)
@@ -235,11 +209,17 @@ class buildTrie:
         return tree
 
 
-class displayTrie():    
+class displayTrie():  
+    """Object for visualizing the tree. Call this after building the tree.
+    """
+    
     def __init__(self, trie):
+        """Constructor which executes the visualization of the tree.
+        """  
         self.traceFigure(trie)        
    
-   
+    # A function for calculating the layout for a tree. 
+    # source: https://www.cluzters.ai/forums/topic/459/can-one-get-hierarchical-graphs-from-networkx-with-python-3?c=1597
     def hierarchy_pos(self, G, root, width = 1, vert_gap = 0.2, vert_loc = 0, xcenter = 0.5 ):
         '''If there is a cycle that is reachable from root, then result will not be a hierarchy.
 
@@ -261,7 +241,6 @@ class displayTrie():
                 if len(neighbors)!=0:
                     dx = width/len(list(neighbors))
                     nextx = xcenter - width/2 - dx/2
-                    #print(root, width, dx)
                     for neighbor in neighbors:
                         nextx += dx
                         pos = h_recur(G,neighbor, dx, vert_gap = vert_gap,
@@ -283,7 +262,7 @@ class displayTrie():
                                         - An hsv/hsva string (e.g. 'hsv(0,100%,100%)')     
                                         - A named CSS color: Defaults to 'white'.\n
                 size (int): Size of font. Defaults to 15.
-
+           
             Returns:
                 annotations (list): Array of string, which represents annotations.
             """
@@ -315,6 +294,16 @@ class displayTrie():
 
 
     def extractVertexData(self ,G = nx.DiGraph()):
+        """Extract source and value attributes of a node and store them in two arrays.
+        These arrays are then used in plotly for drawing and rendering.  
+
+        Args:
+            G (displayTrie, DiGraph): Defaults to nx.DiGraph().
+
+        Returns:
+            (tuple): returns a 2-ple. The 2-ple contains two lists, source and values, 
+            which contains the source and value attributes of a node.
+        """
         sources = []
         values = []
         for i in G.nodes:
@@ -322,19 +311,6 @@ class displayTrie():
             values.append(G.nodes[i]['value'])
 
         return sources, values
-
-
-    def adjustNodeSize(nodeCount):
-        size = 30
-        if(nodeCount <= 16):
-            return size
-        
-        if(nodeCount >= 200):
-            size = 5
-            return size
-        
-        size = nodeCount * 0.0257
-        return size
 
 
     def traceFigure(self, G):
@@ -401,14 +377,13 @@ class displayTrie():
                   'displaylogo': False,
                   'modeBarButtonsToRemove':['lasso2d']}
         
-        #fig.show(renderer="browser", config=config)
+        fig.show(renderer="browser", config=config)
 
 
 #####################################################################################################
 ##-------------------------------------------CLIENT CODE-------------------------------------------##
 #####################################################################################################
 
-# Testing for edge cases
 trie = buildTrie("somePaths").getTrie()
 displayTrie(trie)
 
