@@ -3,37 +3,31 @@ import networkx as nx
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 
+#############################
+#--------DRAW FIGURE--------#
+#############################
+
 
 def packPath(path):
-    #print("Path:", path, "Type:", type(path))
     output = []
     x = 0
     end = 0
-    if(type(path) is str):
-        path = path.strip()
     
-    while x < len(path):
+    while x != len(path):
+        
         if(path[x] == " "):
             x += 1
             continue
-
-        if(path[x] == "_"):
-            output[len(output)-1] += path[x:len(path)]
-            break
         
-        #print(path[x:])
-        for i in range(x,len(path)-1):
-            if(path[i+1] == " " or path[i+1] == "_"):
-                end = i
+        for i in range(x,len(path)):
+            if(i+1 == len(path) or path[i+1] == " "):
+                end = i+1
                 break
-        #print(x, end)
-        
-        if(end-x == 0 or end == 0):
-            output.append(path[x])
-        else:
-            output.append(path[x] + path[end])
-        x += 1
-       
+            
+        output.append(path[x:end])
+
+        x += (end-x)
+          
     return output
 
 
@@ -59,19 +53,34 @@ class buildTrie:
         f = open(self.textExtensionCheck(filename), "r")
         pathList = []  
         for i in f:
-            tempPath = ""
+            path = ""
+            keys = []
+            values = []
             index = 1
+            i = i.replace(" ", "")
+            
             if(len(i.strip()) == 0):
                 continue
             
-            while(i[index] != "]"):
-                if(i[index] == ','):
+            while(index <= i.index("]")):  
+                temp = ""
+                
+                while(i[index] != ',' and i[index] != ']'):
+                    temp += i[index]
                     index += 1
-                tempPath += i[index]
+                  
+                keys.append(temp[temp.index("_")+1:])  
+                values.append(temp[:temp.index("_")])
                 index += 1
             
-            tempPath = tempPath + i[index+3:len(i)-1]
-            pathList.append(tempPath)
+            values.append(i[i.index("]")+4:-1])
+            #print(keys)
+            #print(values)
+            for i in range(len(keys)):              
+                path += keys[i] + "_" + values[i+1] + " "
+            path = path.split()
+            pathList.append(path)
+        
         return pathList
 
 
@@ -179,19 +188,25 @@ class buildTrie:
             # value(s) as the remaining paths of the corresponding child/children
             count = 0
             while(count < len(paths)):
-                path = paths[count]
+                if(type(paths[count]) is str):
+                    path = packPath(paths[count].strip())
+                else:
+                    path = paths[count]
+                #print(path)
                 # If path is empty, we add an edge to the NIL node.
                 if not path:
                     tree.add_edge(parent, NIL)
                     count += 1
                     continue
-                child = path[0]
-                rest = packPath(path[1:])
+                #TODO: Nodes that have the same key but different values do not overwrite each other.
+                child = (path[0][0], path[0][path[0].index("_")+1:])
+                rest = path[1:]
                 # `child` may exist as the head of more than one path in `paths`.
                 children[child].append(rest)
                 count += 1
             return children
-
+            
+        
         # Initialize the prefix tree with a root node and a nil node.
         tree = nx.DiGraph()
         root = 0
@@ -212,8 +227,8 @@ class buildTrie:
             # We relabel each child with an unused name.
             new_name = len(tree) - 1
             # The "source" node attribute stores the original node name.
-            
-            tree.add_node(new_name, source=child[0], value=child[2:])
+            #print(child, remaining_paths)
+            tree.add_node(new_name, source=child[0], value=child[1])
             tree.add_edge(parent, new_name)
             children = get_children(new_name, remaining_paths)
             stack.append((new_name, iter(children.items())))
@@ -246,9 +261,10 @@ class displayTrie():
                 if len(neighbors)!=0:
                     dx = width/len(list(neighbors))
                     nextx = xcenter - width/2 - dx/2
+                    #print(root, width, dx)
                     for neighbor in neighbors:
                         nextx += dx
-                        pos = h_recur(G,neighbor, width = dx, vert_gap = vert_gap,
+                        pos = h_recur(G,neighbor, dx, vert_gap = vert_gap,
                                             vert_loc = vert_loc-vert_gap, xcenter=nextx, pos=pos,
                                             parent = root, parsed = parsed)
             return pos
@@ -327,7 +343,7 @@ class displayTrie():
         
         pos = self.hierarchy_pos(G, 0, width=10, vert_gap=0.1)
         nx.draw_networkx(G, pos, with_labels=True, node_size = 500, arrows=False, width=3)
-                
+        
         ##################################
         #--------EDGE INFORMATION--------#
         ##################################
@@ -385,12 +401,14 @@ class displayTrie():
                   'displaylogo': False,
                   'modeBarButtonsToRemove':['lasso2d']}
         
-        fig.show(renderer="browser", config=config)
+        #fig.show(renderer="browser", config=config)
 
 
 #####################################################################################################
 ##-------------------------------------------CLIENT CODE-------------------------------------------##
 #####################################################################################################
 
-trie = buildTrie("testPath").getTrie()
+# Testing for edge cases
+trie = buildTrie("somePaths").getTrie()
 displayTrie(trie)
+
