@@ -1,58 +1,113 @@
-
-"""A python program for visualizing prefix trees.
+"""
+A python program for visualizing prefix trees.
 It reads paths from a text file, build the tree,
 and then display that prefix tree. The program uses
 networkx for building the prefix tree and plotly 
-for visualizing."""
+for visualizing.
+"""
 
 from collections import defaultdict
 import networkx as nx
 import plotly.graph_objects as go
-import matplotlib.pyplot as plt
+
+from os import system, name
 
 class buildTrie:
+    """A class for building up a trie using the networkx library.
+    
+    Members
+    -------
+    trie: DiGraph
+        The tree. A DiGraph object from networkx.
+    """
     trie = nx.DiGraph()
     
     
     def __init__(self, filename):
         paths = self.readPathsFromFile(filename)
         self.trie = self.prefix_tree(paths)
-    
+
     
     def getTrie(self):
+        """Getter method to get the trie.
+
+        Returns
+        -------
+        (DiGraph): 
+            Returns the trie
+        """
         return self.trie
     
     
     def readPathsFromFile(self,filename = ""):
-        """The method reads from a file, the content of which is all the paths of a trie. 
+        """Method reads from a file the content of which is all the 
+        paths of a trie. Reformats the data into a suitable format.
         Appends all those paths into a list and returns the list.
         
-        Returns:
-            pathList (list): List of all possible paths
+        Parameters
+        ----------
+        filename: str
+            Name of the .txt file containing our trie paths.
+        
+        Returns
+        -------
+        pathList: list
+            A list of all the trie paths.
         """
         f = open(self.textExtensionCheck(filename), "r")
         pathList = []  
+        # Iterates through every line in the file.
         for i in f:
+            i = i.replace(" ", "")
+            # If the line is empty, continue to next iteration.
+            if(len(i.strip()) == 0):
+                continue
+            
             path = ""
             keys = []
             values = []
             index = 1
-            i = i.replace(" ", "")
-            
-            if(len(i.strip()) == 0):
-                continue
-            
+         
+            # Given a string with the format: [0.0_0, ..., 500000.0_3]___500000.0 
+            # First loop to iterate through the portion of the string that's between
+            # the square brackets.
             while(index <= i.index("]")):  
+                # Temporary variable to store a constructed string.
                 temp = ""
                 
+                # Second loop to build up a string. Starts on the current index and
+                # ends when the string is a ',' or ']'. The constructed string is 
+                # stored in the variable temp. 
+                # An example value for temp would be "0.0_0", "500000.0_3", or "350000.0_2"
                 while(i[index] != ',' and i[index] != ']'):
                     temp += i[index]
                     index += 1
-                  
+                
+                # If the format is correct, then every value of temp should have an underscore,
+                # separating the node key and the node value. Using this, we will split the key
+                # and value into two arrays. The reason being, to make our next process easier. 
                 keys.append(temp[temp.index("_")+1:])  
                 values.append(temp[:temp.index("_")])
                 index += 1
+            # Because of how the algorithm, the algorithm that provides our program the path file, works, 
+            # the data that we've been given is shifted. 
+            '''For example:
+            #      Keys   |    Values
+            #   ----------------------
+            #      0      |    0.0
+            #      3      |    500000.0
+            #      2      |    350000.0
+            #
+            # should be
+            #      Keys   |    Values
+            #   ----------------------
+            #      null   |    0.0
+            #      0      |    500000.0
+            #      3      |    350000.0
+            #      2      |    ...
+            '''
             
+            # This last portion of code is to reshift the data.
             values.append(i[i.index("]")+4:-1])
             
             for i in range(len(keys)):              
@@ -64,10 +119,25 @@ class buildTrie:
 
 
     def textExtensionCheck(self, filename):
+        """Method to make inputting the file name easier. Just in case
+        I'm lazy and don't want to spend a few more milliseconds to
+        type out the .txt extension.
+        
+        Parameters
+        ----------
+        filename: str
+            Name of the .txt file containing our trie paths.
+        
+        Returns
+        -------
+        (string):
+            The file name. Additionally concatenated with ".txt" extension if 
+            the original does not have it.
+        """
         if (filename.__contains__(".txt")):
             return filename
         else:
-            return filename+".txt"
+            return filename + ".txt"
         
     # Taken from networkx prefix_tree source code. Modified to be more specific to my program.
     # source: https://networkx.org/documentation/stable/_modules/networkx/generators/trees.html#prefix_tree
@@ -170,7 +240,7 @@ class buildTrie:
                 path = paths[count]
                 # If path is empty, we add an edge to the NIL node.
                 if not path:
-                    tree.add_edge(parent, NIL)
+                    #tree.add_edge(parent, NIL)
                     count += 1
                     continue
                 child = (path[0][0], path[0][path[0].index("_")+1:])
@@ -201,7 +271,7 @@ class buildTrie:
             # We relabel each child with an unused name.
             new_name = len(tree) - 1
             # The "source" node attribute stores the name of the parent node.
-            # The "value" node attribute specifies the value at that node.
+            # The "value" node attribute stores the value at that node.
             tree.add_node(new_name, source=child[0], value=child[1])
             tree.add_edge(parent, new_name)
             children = get_children(new_name, remaining_paths)
@@ -210,25 +280,36 @@ class buildTrie:
 
 
 class displayTrie():  
-    """Object for visualizing the tree. Call this after building the tree.
-    """
+    """Object for visualizing the tree. Call this after building the tree."""
     
     def __init__(self, trie):
-        """Constructor which executes the visualization of the tree.
-        """  
-        self.traceFigure(trie)        
+        """Constructor. Executes the visualization of the tree."""  
+        self.draw(trie)        
    
     # A function for calculating the layout for a tree. 
     # source: https://www.cluzters.ai/forums/topic/459/can-one-get-hierarchical-graphs-from-networkx-with-python-3?c=1597
     def hierarchy_pos(self, G, root, width = 1, vert_gap = 0.2, vert_loc = 0, xcenter = 0.5 ):
         '''If there is a cycle that is reachable from root, then result will not be a hierarchy.
 
-        G: the graph
-        root: the root node of current branch
-        width: horizontal space allocated for this branch - avoids overlap with other branches
-        vert_gap: gap between levels of hierarchy
-        vert_loc: vertical location of root
-        xcenter: horizontal location of root
+        Parameters
+        ----------
+        G: DiGraph
+            the graph
+        
+        root: any
+            the root node of current branch
+        
+        width: int
+            horizontal space allocated for this branch - avoids overlap with other branches
+        
+        vert_gap: int
+            gap between levels of hierarchy
+        
+        vert_loc: int
+            vertical location of root
+        
+        xcenter: int
+            horizontal location of root
         '''
         def h_recur(G, root, width, vert_gap, vert_loc, xcenter, pos = None, parent = None, parsed = []):      
             if(root not in parsed):
@@ -250,42 +331,63 @@ class displayTrie():
         return h_recur(G, root, width, vert_gap, vert_loc, xcenter)
 
 
-    def makeAnnotations(self, G, pos, text=None, color='black', size=15):
-            """Goes through each vertex and label them accordingly. text (array) parameter needs to be in preorder.
-            
-            Args:
-                pos (dict): A dictionary containing the xy-coordinates of each Vertex in the graph.  
-                text (list): An array of lables as strings. Array length is equal to the number of vertices. Defaults to None.
-                color (string): A hex string (e.g. '#ff0000') or\n       
-                                        - An rgb/rgba string (e.g. 'rgb(255,0,0)')           
-                                        - An hsl/hsla string (e.g. 'hsl(0,100%,50%)')     
-                                        - An hsv/hsva string (e.g. 'hsv(0,100%,100%)')     
-                                        - A named CSS color: Defaults to 'white'.\n
-                size (int): Size of font. Defaults to 15.
-           
-            Returns:
-                annotations (list): Array of string, which represents annotations.
-            """
-            annotations = []
-            for k in G.nodes:
-                annotations.append(dict(
-                text=self.switchLabelling(G, k, text),
-                x=pos[k][0], y=pos[k][1],
-                xref='x1', yref='y1',
-                font=dict(color=color, size=size),
-                showarrow=False
-            ))
-            return annotations
+    def makeAnnotations(self, G, pos, labels=None, color='black', size=15):
+        """The method labels all nodes in the trie.
+        
+        Parameters
+        ----------
+        pos: dictionary
+            A dictionary containing the xy-coordinates of each Vertex in the graph.  
+        
+        labels: Array of strings
+            An array of strings. Array length is equal to the number of 
+            vertices.
+        
+        color: string 
+        -     A hex string (e.g. '#ff0000')     
+        -     An rgb/rgba string (e.g. 'rgb(255,0,0)')           
+        -     An hsl/hsla string (e.g. 'hsl(0,100%,50%)')     
+        -     An hsv/hsva string (e.g. 'hsv(0,100%,100%)')     
+        -     A named CSS color: Defaults to 'white'
+        
+        size: int
+            Size of font. Defaults to 15.
+        
+        Returns
+        -------
+        annotations:
+            Array of string, which represents annotations.
+        """
+        annotations = []
+        for k in G.nodes:
+            annotations.append(dict(
+            text=self.switchLabelling(G, k, labels),
+            x=pos[k][0], y=pos[k][1],
+            xref='x1', yref='y1',
+            font=dict(color=color, size=size),
+            showarrow=False
+        ))
+        return annotations
 
 
     def switchLabelling(self, G, label, labelArray):
-        """Helper function to handle logic to switch between different labels.
-        \nArgs:
-            label (any): String or integer.
-            labelArray (list): Array of labels.
+        """Helper function to handle logic for switching between different labels.
+        If labelArray is None or G.nodes, then the trie will not be labelled.
+        If labelArray is an array of elements, then the trie will be labelled 
+        according to the array.
+        
+        Parameters
+        ----------
+        label: 
+            String or integer.
+        
+        labelArray: array
+            Array of labels.
 
-        Returns:
-            Any: return either an element in G.nodes or an element in the array of labels.
+        Returns
+        -------
+        Any: 
+            return either an element in G.nodes or an element in the array of labels.
         """          
         if labelArray == G.nodes or labelArray == None:
             return label
@@ -294,14 +396,18 @@ class displayTrie():
 
 
     def extractVertexData(self ,G = nx.DiGraph()):
-        """Extract source and value attributes of a node and store them in two arrays.
-        These arrays are then used in plotly for drawing and rendering.  
+        """Extract source and value attributes and store them in two arrays.
+        These arrays are used for drawing.  
 
-        Args:
-            G (displayTrie, DiGraph): Defaults to nx.DiGraph().
+        Parameters
+        ----------
+        G: DiGraph 
+            Defaults to nx.DiGraph().
 
-        Returns:
-            (tuple): returns a 2-ple. The 2-ple contains two lists, source and values, 
+        Returns
+        -------
+        (tuple): 
+            returns a 2-ple. The 2-ple contains two lists, source and values, 
             which contains the source and value attributes of a node.
         """
         sources = []
@@ -313,16 +419,24 @@ class displayTrie():
         return sources, values
 
 
-    def traceFigure(self, G):
+    def draw(self, G):
+        """A Method for drawing and rendering the trie. It extracts data from
+        the networkx tree and places them into arrays. These arrays are then
+        passed into plotly, stored in dictionaries. Plotly will use this data
+        to render the tree.  
+
+        Parameters
+        ----------
+        G: DiGraph
+            Tree needed for visualization.
+        """
         G.remove_node(-1)
-        trieLabels = self.extractVertexData(G)
-        
         pos = self.hierarchy_pos(G, 0, width=10, vert_gap=0.1)
         nx.draw_networkx(G, pos, with_labels=True, node_size = 500, arrows=False, width=3)
         
-        ##################################
-        #--------EDGE INFORMATION--------#
-        ##################################
+        ###########################
+        #--------EDGE DATA--------#
+        ###########################
         edge_x = []
         for (n0, n1) in G.edges:
             for x in (pos[n0][0], pos[n1][0], None):
@@ -339,9 +453,14 @@ class displayTrie():
             hoverinfo='none',
             mode='lines')
 
-        ##################################
-        #--------NODE INFORMATION--------#
-        ##################################
+        ############################
+        #--------LABEL DATA--------#
+        ############################
+        trieLabels = self.extractVertexData(G)
+
+        ###########################
+        #--------NODE DATA--------#
+        ###########################
         node_x = []
         node_y = []
 
@@ -362,9 +481,9 @@ class displayTrie():
                 size=25,
                 line=dict(color="#4B4453", width=1)))
 
-        #############################
-        #--------DRAW FIGURE--------#
-        #############################
+        #########################
+        #--------DRAWING--------#
+        #########################
         fig = go.Figure(
                     data=[edge_trace, node_trace],
                     layout=go.Layout(annotations=self.makeAnnotations(G, pos, trieLabels[0], 'white', 15),
@@ -383,7 +502,23 @@ class displayTrie():
 #####################################################################################################
 ##-------------------------------------------CLIENT CODE-------------------------------------------##
 #####################################################################################################
-
-trie = buildTrie("somePaths").getTrie()
-displayTrie(trie)
+def clear():
+    # for windows
+    if name == 'nt':
+        _ = system('cls')
+ 
+    # for mac and linux(here, os.name is 'posix')
+    else:
+        _ = system('clear')
+        
+option1 = ""
+while(option1 != "Y"):
+    file_name = input("Name of the file you want to open: ")
+    
+    trie = buildTrie(file_name).getTrie()
+    displayTrie(trie)
+    
+    clear()
+    option1 = input("Do you want to quit the program (Y/N)? ")
+    clear()
 
