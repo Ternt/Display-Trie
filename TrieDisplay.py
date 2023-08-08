@@ -1,16 +1,17 @@
-"""
-A python program for visualizing prefix trees.
-It reads paths from a text file, build the tree,
-and then display that prefix tree. The program uses
-networkx for building the prefix tree and plotly 
-for visualizing.
-"""
+
+# A python program for visualizing prefix trees.
+# It reads paths from a text file, build the tree,
+# and then display that prefix tree. The program uses
+# networkx for building the prefix tree and plotly 
+# for visualizing.
+
 
 from collections import defaultdict
 import networkx as nx
 import plotly.graph_objects as go
 
 from os import system, name
+from time import sleep
 
 class buildTrie:
     """A class for building up a trie using the networkx library.
@@ -25,7 +26,7 @@ class buildTrie:
     
     def __init__(self, filename):
         paths = self.readPathsFromFile(filename)
-        self.trie = self.prefix_tree(paths)
+        self.prefix_tree(paths)
 
     
     def getTrie(self):
@@ -91,7 +92,8 @@ class buildTrie:
                 index += 1
             # Because of how the algorithm, the algorithm that provides our program the path file, works, 
             # the data that we've been given is shifted. 
-            '''For example:
+            
+            '''Example:
             #      Keys   |    Values
             #   ----------------------
             #      0      |    0.0
@@ -107,7 +109,9 @@ class buildTrie:
             #      2      |    ...
             '''
             
-            # This last portion of code is to reshift the data.
+            # This last portion of code is to 
+            # 1. reshift the data so that they correspond to their correct values
+            # 2. Build up each path and append them into pathList
             values.append(i[i.index("]")+4:-1])
             
             for i in range(len(keys)):              
@@ -240,7 +244,7 @@ class buildTrie:
                 path = paths[count]
                 # If path is empty, we add an edge to the NIL node.
                 if not path:
-                    #tree.add_edge(parent, NIL)
+                    self.trie.add_edge(parent, NIL)
                     count += 1
                     continue
                 child = (path[0][0], path[0][path[0].index("_")+1:])
@@ -252,11 +256,10 @@ class buildTrie:
             
         
         # Initialize the prefix tree with a root node and a nil node.
-        tree = nx.DiGraph()
         root = 0
-        tree.add_node(root, source="Null", value='')
+        self.trie.add_node(root, source="Null", value='')
         NIL = -1
-        tree.add_node(NIL, source="NIL")
+        self.trie.add_node(NIL, source="NIL")
         children = get_children(root, paths)   
         stack = [(root, iter(children.items()))]
         while stack:
@@ -269,14 +272,14 @@ class buildTrie:
                 stack.pop()
                 continue
             # We relabel each child with an unused name.
-            new_name = len(tree) - 1
+            new_name = len(self.trie) - 1
             # The "source" node attribute stores the name of the parent node.
             # The "value" node attribute stores the value at that node.
-            tree.add_node(new_name, source=child[0], value=child[1])
-            tree.add_edge(parent, new_name)
+            self.trie.add_node(new_name, source=child[0], value=child[1])
+            self.trie.add_edge(parent, new_name)
             children = get_children(new_name, remaining_paths)
             stack.append((new_name, iter(children.items())))
-        return tree
+        
 
 
 class displayTrie():  
@@ -396,7 +399,7 @@ class displayTrie():
 
 
     def extractVertexData(self ,G = nx.DiGraph()):
-        """Extract source and value attributes and store them in two arrays.
+        """Get source and value attributes and store them in two arrays.
         These arrays are used for drawing.  
 
         Parameters
@@ -407,8 +410,8 @@ class displayTrie():
         Returns
         -------
         (tuple): 
-            returns a 2-ple. The 2-ple contains two lists, source and values, 
-            which contains the source and value attributes of a node.
+            returns a 2-ple. The 2-ple contains two lists, source and value. 
+            The lists contain the source and value attributes of a node.
         """
         sources = []
         values = []
@@ -420,10 +423,11 @@ class displayTrie():
 
 
     def draw(self, G):
-        """A Method for drawing and rendering the trie. It extracts data from
+        """A Method for drawing and rendering the trie. It gets data from
         the networkx tree and places them into arrays. These arrays are then
         passed into plotly, stored in dictionaries. Plotly will use this data
         to render the tree.  
+        Resources: https://plotly.com/python/tree-plots/
 
         Parameters
         ----------
@@ -432,17 +436,22 @@ class displayTrie():
         """
         G.remove_node(-1)
         pos = self.hierarchy_pos(G, 0, width=10, vert_gap=0.1)
-        nx.draw_networkx(G, pos, with_labels=True, node_size = 500, arrows=False, width=3)
+        nx.draw_networkx(G, pos, node_size = 500, arrows=False, width=3)
         
         ###########################
         #--------EDGE DATA--------#
         ###########################
+        
+        #List of x edge positions.
         edge_x = []
+        
+        #List of y edge positions.
+        edge_y = [] 
+        
         for (n0, n1) in G.edges:
             for x in (pos[n0][0], pos[n1][0], None):
                 edge_x.append(x)
 
-        edge_y = []
         for (n0, n1) in G.edges:
             for y in (pos[n0][1], pos[n1][1], None):
                 edge_y.append(y)
@@ -461,7 +470,11 @@ class displayTrie():
         ###########################
         #--------NODE DATA--------#
         ###########################
+        
+        #List of x node positions.
         node_x = []
+        
+        #List of y node positions.
         node_y = []
 
         for node in G.nodes():
@@ -502,23 +515,45 @@ class displayTrie():
 #####################################################################################################
 ##-------------------------------------------CLIENT CODE-------------------------------------------##
 #####################################################################################################
-def clear():
-    # for windows
+def clear(seconds):
+    """A function to clear the terminal screen after n seconds.
+
+    Parameters
+    ----------
+        seconds: how long before the terminal screen clears.
+    """
+    sleep(seconds)
+    
     if name == 'nt':
         _ = system('cls')
- 
-    # for mac and linux(here, os.name is 'posix')
+
     else:
         _ = system('clear')
+
+
+def inputFileName():
+    """Function allowing the user to specify the file they want the program
+    to use.
+    """
+    try:
+        clear(0)
+        file_name = input("Name of the file you want to open: ")
         
+        trie = buildTrie(file_name).getTrie()
+        displayTrie(trie)
+        return False
+    except FileNotFoundError:
+        print("File does not exist. Please try again.")
+        clear(2)
+        
+
 option1 = ""
-while(option1 != "Y"):
-    file_name = input("Name of the file you want to open: ")
-    
-    trie = buildTrie(file_name).getTrie()
-    displayTrie(trie)
-    
-    clear()
+while(option1.capitalize() != "Y"):
+    while True:
+        repeat = inputFileName()
+        if (repeat == False):
+            break
+           
     option1 = input("Do you want to quit the program (Y/N)? ")
-    clear()
+    clear(0)
 
